@@ -31,6 +31,8 @@ Warehouse  ── dbo.*  (typed tables)
 | Warehouse | `parts_warehouse` |
 | Pipeline | `p1_load_parts` |
 
+![Pipeline canvas: five copy activities feeding the load procedure](docs/screenshots/04-pipeline.png)
+
 ### Why a staging layer
 
 The first version copied CSVs straight into typed tables and failed:
@@ -44,6 +46,8 @@ CSV files carry no type information, so every value arrives as text, and Fabric 
 
 1. Copies each CSV into a **staging table where every column is `VARCHAR`** (text into text never fails).
 2. Converts in T-SQL with `TRY_CAST`, where the conversion logic is visible, testable, and version-controlled.
+
+![DATE type error that led to the staging design](docs/screenshots/03-error-date-type.png)
 
 `NULLIF(column, '')` runs before every `TRY_CAST`, because `TRY_CAST('' AS DATE)` returns `1900-01-01` and `TRY_CAST('' AS INT)` returns `0` rather than NULL. Without it, unshipped orders would silently get a ship date of January 1, 1900.
 
@@ -85,6 +89,20 @@ Conversion checks (see `sql/05_validation_queries.sql`):
 - Zero rows with a `1900-01-01` date, which would indicate empty strings converted incorrectly.
 - Customers without a middle name keep a real NULL (about 51 rows).
 
+![Successful pipeline run: all six activities succeeded](docs/screenshots/05-successful-run.png)
+
+---
+
+## Notable failures
+
+Full details for all nine issues are in [`docs/troubleshooting-log.md`](docs/troubleshooting-log.md). Two worth showing:
+
+**Copied column mappings.** Four copy activities were duplicated from `copy_customers`. Changing the source file didn't reset the column mapping, so `copy_suppliers` looked for `customer_id` in `suppliers.csv`. Fix: Mapping → Reset → Import schemas on each activity. Lesson: get one activity working end to end before cloning it.
+
+![Column mapping error on copy_suppliers](docs/screenshots/02-error-column-mapping.png)
+
+**Text dates into a DATE column.** Shown above under [Why a staging layer](#why-a-staging-layer).
+
 ---
 
 ## Cost
@@ -94,6 +112,8 @@ Fabric's free trial is not available to newly created tenants, so this project r
 - Pay-as-you-go, billed per second while running; **paused whenever not in use**.
 - A $10 Azure budget alert guards against forgetting to pause.
 - Default size in the Azure create form was F64; it was changed to F2 before creation.
+
+![F2 capacity review page](docs/screenshots/01-capacity-f2.png)
 - Total cost for the build: _fill in from Azure Cost Management_.
 
 ---
