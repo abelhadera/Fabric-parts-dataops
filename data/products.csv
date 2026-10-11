@@ -1,0 +1,63 @@
+"part_id","sku","part_name","category","supplier_id","unit_price","quantity_on_hand"
+1,FIL-1001,Filters - Better Heavy Duty,Filters,,298.59,484
+2,EXH-1002,Exhaust - Picture Heavy Duty,Exhaust,,122.95,446
+3,FLU-1003,Fluids & Chemicals - Piece OEM,Fluids & Chemicals,,434.14,475
+4,EXH-1004,Exhaust - Still Heavy Duty,Exhaust,,322.26,204
+5,ELE-1005,Electrical - Garden OEM,Electrical,,405.33,231
+6,BAT-1006,Batteries - Treat Heavy Duty,Batteries,4,33.49,-19
+7,EXH-1007,Exhaust - Image Heavy Duty,Exhaust,10,103.00,-2
+8,BEL-1008,Belts & Hoses - Actually Standard,Belts & Hoses,15,0.00,169
+9,BAT-1009,Batteries - Film Heavy Duty,Batteries,5,0.00,109
+10,EXH-1010,Exhaust - Job Heavy Duty,Exhaust,12,421.30,292
+11,FLU-1011,Fluids & Chemicals - Important OEM,Fluids & Chemicals,4,354.16,413
+12,ENG-1012,Engine Parts - Start Heavy Duty,Engine Parts,2,48.13,220
+13,ELE-1013,Electrical - Become OEM,Electrical,7,212.83,373
+14,BRA-1014,Brakes - Share Standard,Brakes,1,184.17,173
+15,BAT-1015,Batteries - Wear Heavy Duty,Batteries,4,89.64,229
+16,FIL-1016,Filters - Operation OEM,Filters,3,128.95,127
+17,BAT-1017,Batteries - West OEM,Batteries,13,388.30,281
+18,BAT-1018,Batteries - Eight Standard,Batteries,11,449.68,428
+19,BRA-1019,Brakes - Owner Standard,Brakes,15,340.34,121
+20,FIL-1020,Filters - Near OEM,Filters,8,219.20,442
+21,ENG-1021,Engine Parts - Condition Standard,Engine Parts,3,173.64,199
+22,LIG-1022,Lighting - Reveal OEM,Lighting,5,193.24,490
+23,EXH-1023,Exhaust - Husband OEM,Exhaust,3,89.50,111
+24,BRA-1024,Brakes - Condition Standard,Brakes,12,144.55,25
+25,FLU-1025,Fluids & Chemicals - Chair OEM,Fluids & Chemicals,9,414.13,271
+26,FIL-1026,Filters - Exist Standard,Filters,9,40.65,95
+27,BAT-1027,Batteries - Fish Standard,Batteries,11,388.51,206
+28,BAT-1028,Batteries - Executive Heavy Duty,Batteries,10,269.56,317
+29,BAT-1029,Batteries - Mind OEM,Batteries,11,264.73,267
+30,ELE-1030,Electrical - Child Premium,Electrical,4,303.03,160
+31,BEL-1031,Belts & Hoses - At Premium,Belts & Hoses,7,63.24,330
+32,LIG-1032,Lighting - Computer OEM,Lighting,6,418.41,479
+33,BAT-1033,Batteries - Learn Standard,Batteries,8,281.42,288
+34,BAT-1034,Batteries - Fact Standard,Batteries,9,99.85,135
+35,FIL-1035,Filters - Know Premium,Filters,15,35.61,125
+36,ELE-1036,Electrical - Firm Premium,Electrical,3,199.99,278
+37,LIG-1037,Lighting - Member Standard,Lighting,11,368.61,153
+38,BAT-1038,Batteries - Stay Heavy Duty,Batteries,5,56.37,54
+39,EXH-1039,Exhaust - Ball Heavy Duty,Exhaust,5,130.38,107
+40,ELE-1040,Electrical - Herself Heavy Duty,Electrical,11,287.24,135
+41,EXH-1041,Exhaust - Enter OEM,Exhaust,5,407.87,433
+42,BRA-1042,Brakes - Yet Standard,Brakes,11,193.49,141
+43,BRA-1043,Brakes - Employee Standard,Brakes,6,348.15,326
+44,LIG-1044,Lighting - Set Heavy Duty,Lighting,12,201.62,361
+45,ENG-1045,Engine Parts - Process Standard,Engine Parts,2,38.48,452
+46,FIL-1046,Filters - Mission Standard,Filters,14,169.30,282
+47,FIL-1047,Filters - Phone OEM,Filters,3,23.61,186
+48,BRA-1048,Brakes - Practice Premium,Brakes,4,308.52,341
+49,BAT-1049,Batteries - Deal Premium,Batteries,13,254.15,447
+50,ENG-1050,Engine Parts - Lot Heavy Duty,Engine Parts,15,418.80,442
+51,FIL-1051,Filters - Both Heavy Duty,Filters,15,188.47,91
+52,ELE-1052,Electrical - Central OEM,Electrical,13,303.11,376
+53,BEL-1053,Belts & Hoses - Fly Premium,Belts & Hoses,3,355.38,55
+54,ENG-1054,Engine Parts - According Standard,Engine Parts,14,214.46,102
+55,SUS-1055,Suspension - Individual Premium,Suspension,5,370.14,446
+56,BEL-1056,Belts & Hoses - Go Heavy Duty,Belts & Hoses,1,298.71,204
+57,ELE-1057,Electrical - Thought Premium,Electrical,14,35.89,395
+58,LIG-1058,Lighting - Pressure Premium,Lighting,11,231.69,347
+59,EXH-1059,Exhaust - Husband Premium,Exhaust,1,56.33,496
+60,LIG-1060,Lighting - Summer Heavy Duty,Lighting,10,433.33,135
+61,ELE-1005,Electrical - Training (re-listed),Electrical,1,53.24,111
+62,FIL-1020,Filters - Girl (re-listed),Filters,6,329.20,80
