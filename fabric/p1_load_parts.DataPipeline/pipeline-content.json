@@ -933,6 +933,7 @@
           "secureOutput": false
         },
         "name": "run_dq_checks",
+        "description": "Runs data-quality checks after the load; fails the pipeline on CRITICAL issues",
         "dependsOn": [
           {
             "activity": "load_to_dbo",
