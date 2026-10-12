@@ -48,3 +48,11 @@ Every issue hit while building the project, in order.
 
 **9. Potential silent bug avoided: `TRY_CAST('' AS DATE)` → `1900-01-01`**
 - **Fix:** `NULLIF(col, '')` before every cast. Verified with a check that counts `1900-01-01` dates (expected 0).
+
+## Data quality
+
+**10. Duplicate load on rerun (incident 001)**
+- **Symptom:** `run_dq_checks` failed: "Data-quality check failed: CRITICAL issues found." Every `dbo` table at 3× its source count.
+- **Cause:** Copy activities appended into `stg` (2×) and `usp_load_from_staging` appended all of `stg` onto existing `dbo` (3×).
+- **Fix:** `TRUNCATE` at the start of the load procedure, plus a pre-copy `TRUNCATE TABLE stg.<table>;` on each copy activity. Verified with two consecutive clean runs.
+- **Write-up:** [`incident-001-duplicate-load.md`](incident-001-duplicate-load.md)
