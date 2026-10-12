@@ -875,6 +875,7 @@
           "secureOutput": false
         },
         "name": "load_to_dbo",
+        "description": "Truncates dbo and reloads from staging with TRY_CAST conversions (rerun-safe)",
         "dependsOn": [
           {
             "activity": "Copy_customers",
