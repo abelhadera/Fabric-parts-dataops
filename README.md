@@ -1,180 +1,49 @@
 # fabric-parts-dataops
 
-A small, end-to-end data pipeline on **Microsoft Fabric**, built to get hands-on experience with the platform side of DataOps: provisioning capacity, loading data, validating it, and handling failures.
-
-The data is a practice auto-parts database (customers, suppliers, products, orders, order items) that originally lived in a local SQL Server instance.
-
-> **Status:** Complete. Load, transform, automated data-quality checks, a deliberate duplicate-load incident caught by those checks ([incident 001](docs/incident-001-duplicate-load.md)), and a verified scheduled run.
-
----
+An end-to-end data pipeline on **Microsoft Fabric**: load CSVs, convert types, validate the data, and fail loudly when something is wrong.
 
 ## Architecture
 
 ```
-SQL Server (local, Docker)
-        │  export to CSV (DBeaver)
-        ▼
-Lakehouse  ── Files/raw/*.csv          (landing zone, files kept as received)
-        │  Pipeline: 5 Copy data activities (run in parallel)
-        ▼
-Warehouse  ── stg.*  (all columns VARCHAR)
-        │  Stored procedure: dbo.usp_load_from_staging (TRY_CAST + NULLIF)
-        ▼
-Warehouse  ── dbo.*  (typed tables)
-        │  Stored procedure: dbo.usp_run_dq_checks
-        ▼
-Warehouse  ── dbo.dq_log  (one row per check per run; THROWs on CRITICAL, failing the pipeline)
+CSV files ──► Lakehouse (raw files)
+          ──► Warehouse stg.*   (all VARCHAR)       5 copy activities
+          ──► Warehouse dbo.*   (typed tables)      usp_load_from_staging
+          ──► dbo.dq_log        (quality results)   usp_run_dq_checks
 ```
 
-| Component | Name |
-|---|---|
-| Capacity | `partsdataops` (F2, East US, pay-as-you-go) |
-| Workspace | `parts-dataops` |
-| Lakehouse | `parts_lakehouse` |
-| Warehouse | `parts_warehouse` |
-| Pipeline | `p1_load_parts` |
+![Pipeline](docs/screenshots/04-pipeline.png)
 
-![Pipeline canvas: five copy activities feeding the load and data-quality procedures](docs/screenshots/04-pipeline.png)
+## Key decisions
 
-### Why a staging layer
+- **Staging layer.** CSVs carry no types, so loading straight into `DATE` columns failed. Data lands as text, then `TRY_CAST` converts it in SQL. `NULLIF(col, '')` runs first, because `TRY_CAST('' AS DATE)` returns `1900-01-01`, not NULL.
+- **Data-quality checks.** Fabric primary keys are `NOT ENFORCED`, so duplicates aren't blocked. After every load, checks write to `dq_log`. CRITICAL issues (duplicates, bad keys) fail the pipeline; WARNINGs (orphans, negative stock) are logged only.
+- **Rerun-safe loads.** Both layers truncate before loading, so a rerun replaces data instead of duplicating it.
+- **UTC timestamps.** Stored in UTC, converted for display.
+- **Cost.** Smallest capacity (F2), paused when idle, with a $10 budget alert.
 
-The first version copied CSVs straight into typed tables and failed:
+## Incident: duplicate load on rerun
 
-```
-Column 'signup_date' of type 'DATE' is not compatible with external data type
-'Parquet physical type: BYTE_ARRAY, logical type: UTF8'
-```
+A deliberate rerun tripled every table, because both layers appended instead of replacing. The checks caught it and failed the run. Fixed with truncate-and-reload at both layers. [Full write-up](docs/incident-001-duplicate-load.md)
 
-CSV files carry no type information, so every value arrives as text, and Fabric Warehouse will not implicitly load text into a `DATE` column. Instead of fighting the copy activity's mapping, the pipeline now:
+![Data-quality failure](docs/screenshots/07-dq-failure.png)
 
-1. Copies each CSV into a **staging table where every column is `VARCHAR`** (text into text never fails).
-2. Converts in T-SQL with `TRY_CAST`, where the conversion logic is visible, testable, and version-controlled.
+## Run history
 
-![DATE type error that led to the staging design](docs/screenshots/03-error-date-type.png)
+Early config failures, the deliberate failure, two clean reruns after the fix, and a scheduled run.
 
-`NULLIF(column, '')` runs before every `TRY_CAST`, because `TRY_CAST('' AS DATE)` returns `1900-01-01` and `TRY_CAST('' AS INT)` returns `0` rather than NULL. Without it, unshipped orders would silently get a ship date of January 1, 1900.
+![Run history](docs/screenshots/11-scheduled-run.png)
 
----
+## Source control
 
-## Repository layout
+The Fabric workspace is connected to this repo on the `fabric-workspace` branch. Pipeline and warehouse definitions (tables, procedures) live in `fabric/` and reach `main` through pull requests.
+
+![Pull request](docs/screenshots/14-pull-request.png)
+
+## Repo layout
 
 ```
-sql/
-  01_create_dbo_tables.sql          typed destination tables
-  02_add_primary_keys.sql           primary keys (NOT ENFORCED, as Fabric requires)
-  03_create_stg_tables.sql          staging schema and all-VARCHAR tables
-  04_usp_load_from_staging.sql      stg -> dbo transform procedure (original, append-only)
-  05_validation_queries.sql         row counts and conversion checks
-  06_create_dq_log.sql              data-quality results table
-  07_usp_run_dq_checks.sql          data-quality checks; fails the run on CRITICAL issues
-  08_fix_rerun_safe_load.sql        incident 001 fix: truncate-and-reload
-docs/
-  incident-001-duplicate-load.md    write-up of the duplicate-load incident
-  sqlserver-vs-fabric.md            behavior differences found while migrating
-  troubleshooting-log.md            every error hit during the build and how it was fixed
-  screenshots/                      pipeline canvas, run output, monitoring
-data/                               the five source CSVs
+fabric/   workspace definitions, synced by Fabric Git integration
+sql/      table, procedure, and validation scripts (run in order)
+docs/     incident write-up, troubleshooting log, SQL Server vs Fabric notes, screenshots
+data/     source CSVs
 ```
-
----
-
-## Validation
-
-After each run, row counts in `dbo` must match the source:
-
-| Table | Rows |
-|---|---|
-| customers | 155 |
-| suppliers | 15 |
-| products | 62 |
-| orders | 307 |
-| order_items | 772 |
-
-Conversion checks (see `sql/05_validation_queries.sql`):
-
-- Unshipped orders keep a real NULL `ship_date` (about 30 rows).
-- Zero rows with a `1900-01-01` date, which would indicate empty strings converted incorrectly.
-- Customers without a middle name keep a real NULL (about 51 rows).
-
-![Successful pipeline run: all six activities succeeded](docs/screenshots/05-successful-run.png)
-
----
-
-## Data-quality checks
-
-`dbo.usp_run_dq_checks` runs after every load and writes one row per check to `dbo.dq_log`:
-
-| Severity | Checks | Effect |
-|---|---|---|
-| CRITICAL | Duplicate primary keys (all 5 tables), NULL order IDs, `1900-01-01` ship dates | `THROW` fails the pipeline run |
-| WARNING | Orphaned orders, orphaned order items, negative stock, zero-price products | Logged only |
-
-Only problems that make the data wrong to use fail the run; known data issues are logged for review instead of paging someone, to avoid alert fatigue. Duplicate checks matter in Fabric specifically because primary keys are `NOT ENFORCED`.
-
-Timestamps in `dq_log` are stored in UTC and converted for display, because daylight saving creates a repeated hour each November:
-
-```sql
-SELECT CAST(run_at AT TIME ZONE 'UTC' AT TIME ZONE 'Eastern Standard Time' AS DATETIME2(0)) AS run_at_eastern,
-       check_name, severity, failed_rows
-FROM dbo.dq_log
-ORDER BY run_at DESC, severity, check_name;
-```
-
-![Clean data-quality run](docs/screenshots/06-dq-log-clean.png)
-
-### Run history
-
-The Monitoring hub shows the whole build in order: early failures while configuring the copy activities, successful loads, the deliberate failure at 7:13 PM, two clean reruns after the fix (7:41 and 7:44 PM), and the scheduled run at 8:15 PM.
-
-![Monitoring hub run history with the scheduled run](docs/screenshots/11-scheduled-run.png)
-
-### Incident 001: duplicate load on rerun
-
-A deliberate rerun tripled every table, because both the copy activities and the load procedure appended instead of replacing. The checks failed the run; the fix was truncate-and-reload at both layers. Full write-up: [`docs/incident-001-duplicate-load.md`](docs/incident-001-duplicate-load.md).
-
-![Data-quality failure on rerun](docs/screenshots/07-dq-failure.png)
-
----
-
-## Notable failures
-
-Full details for every issue are in [`docs/troubleshooting-log.md`](docs/troubleshooting-log.md). Two worth showing:
-
-**Copied column mappings.** Four copy activities were duplicated from `copy_customers`. Changing the source file didn't reset the column mapping, so `copy_suppliers` looked for `customer_id` in `suppliers.csv`. Fix: Mapping → Reset → Import schemas on each activity. Lesson: get one activity working end to end before cloning it.
-
-![Column mapping error on copy_suppliers](docs/screenshots/02-error-column-mapping.png)
-
-**Text dates into a DATE column.** Shown above under [Why a staging layer](#why-a-staging-layer).
-
----
-
-## Scheduling
-
-The pipeline was scheduled daily (Eastern time) and a run triggered by the schedule, not by hand, was confirmed in the Monitoring hub. The schedule was then turned **off** on purpose: this is a cost-controlled test environment on a capacity that's paused when idle, so an always-on daily run would either fail while paused or start unexpectedly after a resume. In production it would stay on, set early in the morning before reports are used, with failure notifications enabled.
-
----
-
-## Cost
-
-Fabric's free trial is not available to newly created tenants, so this project runs on a paid **F2** capacity, the smallest SKU.
-
-- Pay-as-you-go, billed per second while running; **paused whenever not in use**.
-- A $10 Azure budget alert guards against forgetting to pause.
-- Default size in the Azure create form was F64; it was changed to F2 before creation.
-- Total cost for the build: _fill in from Azure Cost Management_.
-
-![F2 capacity review page](docs/screenshots/01-capacity-f2.png)
-
----
-
-## Roadmap
-
-- [x] Provision F2 capacity, workspace, Lakehouse, Warehouse
-- [x] Land raw CSVs in the Lakehouse
-- [x] Create typed `dbo` tables and `stg` staging tables
-- [x] Pipeline: 5 parallel copy activities into staging
-- [x] Transform procedure from staging to typed tables, validated against source counts
-- [x] Data-quality procedure that logs check results and fails the pipeline on critical issues
-- [x] Deliberate rerun to trigger a duplicate-load failure; investigate in the Monitoring hub; fix and document as an incident
-- [x] Schedule the pipeline and confirm a scheduled run (then disabled to control cost)
-- [ ] Optional: connect the workspace to this repo with Fabric Git integration
