@@ -4,7 +4,7 @@ A small, end-to-end data pipeline on **Microsoft Fabric**, built to get hands-on
 
 The data is a practice auto-parts database (customers, suppliers, products, orders, order items) that originally lived in a local SQL Server instance.
 
-> **Status:** Load, transform, and automated data-quality checks complete, including a deliberate duplicate-load incident that the checks caught ([incident 001](docs/incident-001-duplicate-load.md)). Scheduling is next (see [Roadmap](#roadmap)).
+> **Status:** Complete. Load, transform, automated data-quality checks, a deliberate duplicate-load incident caught by those checks ([incident 001](docs/incident-001-duplicate-load.md)), and a verified scheduled run.
 
 ---
 
@@ -122,6 +122,12 @@ ORDER BY run_at DESC, severity, check_name;
 
 ![Clean data-quality run](docs/screenshots/06-dq-log-clean.png)
 
+### Run history
+
+The Monitoring hub shows the whole build in order: early failures while configuring the copy activities, successful loads, the deliberate failure at 7:13 PM, two clean reruns after the fix (7:41 and 7:44 PM), and the scheduled run at 8:15 PM.
+
+![Monitoring hub run history with the scheduled run](docs/screenshots/11-scheduled-run.png)
+
 ### Incident 001: duplicate load on rerun
 
 A deliberate rerun tripled every table, because both the copy activities and the load procedure appended instead of replacing. The checks failed the run; the fix was truncate-and-reload at both layers. Full write-up: [`docs/incident-001-duplicate-load.md`](docs/incident-001-duplicate-load.md).
@@ -139,6 +145,12 @@ Full details for every issue are in [`docs/troubleshooting-log.md`](docs/trouble
 ![Column mapping error on copy_suppliers](docs/screenshots/02-error-column-mapping.png)
 
 **Text dates into a DATE column.** Shown above under [Why a staging layer](#why-a-staging-layer).
+
+---
+
+## Scheduling
+
+The pipeline was scheduled daily (Eastern time) and a run triggered by the schedule, not by hand, was confirmed in the Monitoring hub. The schedule was then turned **off** on purpose: this is a cost-controlled test environment on a capacity that's paused when idle, so an always-on daily run would either fail while paused or start unexpectedly after a resume. In production it would stay on, set early in the morning before reports are used, with failure notifications enabled.
 
 ---
 
@@ -164,5 +176,5 @@ Fabric's free trial is not available to newly created tenants, so this project r
 - [x] Transform procedure from staging to typed tables, validated against source counts
 - [x] Data-quality procedure that logs check results and fails the pipeline on critical issues
 - [x] Deliberate rerun to trigger a duplicate-load failure; investigate in the Monitoring hub; fix and document as an incident
-- [ ] Schedule the pipeline and confirm a scheduled run
+- [x] Schedule the pipeline and confirm a scheduled run (then disabled to control cost)
 - [ ] Optional: connect the workspace to this repo with Fabric Git integration
