@@ -10,7 +10,7 @@
               "type": "DelimitedTextReadSettings"
             },
             "storeSettings": {
-              "type": "LakehouseReadSettings",
+              "type": "AzureBlobStorageReadSettings",
               "recursive": true,
               "enablePartitionDiscovery": false
             },
@@ -200,6 +200,7 @@
           "secureOutput": false
         },
         "name": "Copy_customers",
+        "description": "Customer table example ",
         "dependsOn": []
       },
       {
@@ -211,7 +212,7 @@
               "type": "DelimitedTextReadSettings"
             },
             "storeSettings": {
-              "type": "LakehouseReadSettings",
+              "type": "AzureBlobStorageReadSettings",
               "recursive": true,
               "enablePartitionDiscovery": false
             },
